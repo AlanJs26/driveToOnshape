@@ -1,0 +1,15 @@
+
+[project]
+name = ""
+version = ""
+description = ""
+authors = [
+    {name = "AlanJS", email = "alanjoses.29@gmail.com"},
+]
+dependencies = [
+    "selenium>=4.11.2",
+    "rich>=13.5.2",
+]
+license = {text = "MIT"}
+requires-python = ">=3.8"
+readme = "README.md"
