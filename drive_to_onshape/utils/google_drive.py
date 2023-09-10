@@ -2,9 +2,9 @@ from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.webdriver.remote.webelement import WebElement
 from typing import Literal,List, Union
 from selenium.webdriver.common.by import By
-from utils.actions import Act
+from drive_to_onshape.utils.actions import Act
 from selenium.webdriver.support import expected_conditions as EC
-from utils.utils import *
+from drive_to_onshape.utils.utils import *
 
 
 class GoogleDrive:

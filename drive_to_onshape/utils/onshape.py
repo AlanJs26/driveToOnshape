@@ -5,11 +5,11 @@ from selenium.common.exceptions import TimeoutException
 from typing import Literal,List, Tuple
 from selenium.webdriver.common.by import By
 from time import sleep
-from utils.actions import Act
+from drive_to_onshape.utils.actions import Act
 from selenium.webdriver.support import expected_conditions as EC
 import re
 from rich import print
-from utils.utils import TraverseException, Folder
+from drive_to_onshape.utils.utils import TraverseException, Folder
 
 
 class Onshape:
