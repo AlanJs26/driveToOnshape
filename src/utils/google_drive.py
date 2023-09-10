@@ -2,17 +2,18 @@ from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.webdriver.remote.webelement import WebElement
 from typing import Literal,List, Union
 from selenium.webdriver.common.by import By
-from example_package.actions import Act
+from utils.actions import Act
 from selenium.webdriver.support import expected_conditions as EC
-from example_package.utils import *
+from utils.utils import *
 
 
 class GoogleDrive:
-    def __init__(self, driver: WebDriver, window: str, act: Act) -> None:
+    def __init__(self, driver: WebDriver, window: str, act: Act, local_root: str) -> None:
         self.driver = driver
         self.window = window
         self.act = act
         self.wait = act.wait
+        self.local_root = local_root
 
     def focus(self):
         self.driver.switch_to.window(self.window)
@@ -25,7 +26,7 @@ class GoogleDrive:
     def is_folder(self, el: WebElement):
         self.focus()
 
-        aria_label = el.find_element(By.XPATH, './../../../div/div/div/div/div').get_dom_attribute('aria-label')
+        aria_label = el.find_element(By.XPATH, './../div[2]/div').get_dom_attribute('aria-label')
         if not aria_label:
             return False
         aria_label = aria_label.lower()
@@ -47,7 +48,7 @@ class GoogleDrive:
         folder_files_xpath = f'//*[@id="{container_id}"]/div/c-wiz/div[2]/c-wiz/div[1]/c-wiz/div[2]/c-wiz/div[1]/c-wiz/c-wiz/div/c-wiz/div/div/div/div/div[4]'
 
         first_el = self.driver.find_element(By.XPATH, folder_files_xpath)
-        self.act.scroll_down(first_el, repeat=3)
+        self.act.scroll_to_bottom(first_el, repeat=3)
 
         # folder_xpath = f'//*[@id="{container_id}"]/div/c-wiz/div[2]/c-wiz/div[1]/c-wiz/div[2]/c-wiz/div[1]/c-wiz[1]/c-wiz/div/c-wiz/div/div/div/div[2]/div/div'
         # files_xpath = f'//*[@id="{container_id}"]/div/c-wiz/div[2]/c-wiz/div[1]/c-wiz/div[2]/c-wiz/div[1]/c-wiz[2]/c-wiz/div/c-wiz/div/div/div/div[2]/div/div'
@@ -67,12 +68,12 @@ class GoogleDrive:
     def download_folder(self, folder:Union[Root,Folder]):
 
         if find_folder(folder.name):
-            return f'{downloads_folder}/{folder.name}'
+            return f'{self.local_root}/{folder.name}'
 
         zip_file = find_zip(folder.name)
         if zip_file:
             unzip(zip_file)
-            return f'{downloads_folder}/{folder.name}'
+            return f'{self.local_root}/{folder.name}'
 
         self.focus()
 
@@ -96,7 +97,7 @@ class GoogleDrive:
         zip_file = find_zip(folder.name)
         if zip_file:
             unzip(zip_file)
-            return f'{downloads_folder}/{folder.name}'
+            return f'{self.local_root}/{folder.name}'
 
         print(f'[red] could not download "{folder.name}"')
         return ''

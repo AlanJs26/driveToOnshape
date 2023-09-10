@@ -1,3 +1,8 @@
+
+logs
+merged_log.json
+parsed_log.json
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

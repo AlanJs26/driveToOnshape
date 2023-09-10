@@ -1,11 +1,15 @@
 from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.common.keys import Keys
-from typing import Literal,List
+from selenium.common.exceptions import TimeoutException
+from typing import Literal,List, Tuple
 from selenium.webdriver.common.by import By
 from time import sleep
-from example_package.actions import Act
+from utils.actions import Act
 from selenium.webdriver.support import expected_conditions as EC
+import re
+from rich import print
+from utils.utils import TraverseException, Folder
 
 
 class Onshape:
@@ -14,10 +18,25 @@ class Onshape:
         self.window = window
         self.act = act
         self.wait = act.wait
+        self.wait_little = act.wait_little
         self.action = act.action
+        self.root_link = ''
 
     def focus(self):
         self.driver.switch_to.window(self.window)
+
+    def go_to_path(self, path_list: List[str]):
+        for path in path_list:
+            folder_els, _ = self.find_files()
+            for el in folder_els:
+                if el.text.strip() == path:
+                    self.act.click(el)
+                    sleep(2)
+                    break
+            else:
+                current_folder = Folder(path, [],[], '','')
+                raise TraverseException(current_folder, f'Could not find "{current_folder.name}" element in onshape')
+
 
     def get_current_path_folders(self) -> List[str]:
         self.focus()
@@ -48,6 +67,7 @@ class Onshape:
         self.driver.execute_script("document.body.style.zoom='10%'")
         self.driver.get(link)
         self.action.pause(2).send_keys(Keys.ENTER).pause(3).perform()
+        self.root_link = link
 
     def is_folder(self, el:WebElement):
         self.focus()
@@ -57,36 +77,34 @@ class Onshape:
             return False
         return 'Folder' in aria_label
 
-    def find_files(self, item_type: Literal['all','files','folders'] ='all', retry=0) -> List[WebElement]:
+    def find_files(self, retry=0) -> Tuple[List[WebElement], List[WebElement]]:
         self.focus()
 
         xpath = '//*[@id="document-list-scroll-container"]/table/tbody/tr/td[2]/div/div[1]/a/span'
 
-        first_el = self.driver.find_element(By.XPATH, xpath)
-
-        self.act.scroll_down(first_el, repeat=3)
+        self.act.scroll_to_bottom('document-list-scroll-container', repeat=3)
 
         elems = self.driver.find_elements(By.XPATH, xpath)
 
         # for e in elems:
         #     print(e.text)
 
-        if item_type == 'folders':
-            elems = list(filter(lambda e: self.is_folder(e), elems))
-        elif item_type == 'files':
-            elems = list(filter(lambda e: not self.is_folder(e), elems))
+        elems = (
+            list(filter(lambda e: self.is_folder(e), elems)),
+            list(filter(lambda e: not self.is_folder(e), elems))
+        )
 
-        while retry>0 and not elems:
+        while retry>0 and not (elems[0] or elems[1]):
             seconds = 2
             print(f'[yellow]Retrying "find_in_onshape" ({seconds} seconds)...')
             sleep(seconds)
-            elems = self.find_files(item_type)
+            elems = self.find_files()
 
         return elems
 
     def upload(self, file_path: str):
-        if file_path.lower().endswith('.sldprt') or file_path.lower().endswith('.step') or file_path.lower().endswith('.sldasm') or file_path.lower().endswith('.slddrw'):
-            print(f'[red]skipping "{file_path}"')
+        if re.search(r".*\.sld.*", file_path.lower()) or file_path.lower().endswith('.step'):
+            print(f'[yellow]skipping "{file_path}"')
             return
         self.focus()
 
@@ -106,6 +124,15 @@ class Onshape:
             elem.send_keys(file_path)
         except:
             print(f'[red]Could not upload "{file_path}"')
+
+        confirm_popup_xpath = '//*[@id="model-name-dialog-ok"]'
+        try:
+            elem:WebElement = self.wait_little.until(EC.presence_of_element_located((By.XPATH, confirm_popup_xpath)))
+            self.act.click(elem)
+        except TimeoutException:
+            pass
+
+
         # elem.submit()
         print(f'[blue]"{file_path}" Uploaded!')
 
